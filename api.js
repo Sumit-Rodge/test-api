@@ -49,7 +49,7 @@ app.post('/login',async (req,res)=>{
                 secure: false, 
                 path: '/'
             };
-            res.cookie('token',token,options);
+            // res.cookie('token',token,options);
             res.status(200).send(token);
             // res.send(token);
 
