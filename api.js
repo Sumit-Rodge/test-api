@@ -30,6 +30,53 @@ app.get('/',async (req,res)=>{
     res.send(data);
 })
 
+// get single expense using its id
+    app.get('/getexpenese/:id/:expenseid',async (req,res)=>{
+        const id = req.params.id;
+        const expenseId = req.params.expenseid;
+        const decode = jwt.verify(id,process.env.SECRET_KEY);
+        const client = await MongoClient.connect(uri);
+        const data = await client.db('users').collection('expenses').find({"id":new ObjectId(decode._id),"expenses.id": expenseId}).toArray();
+
+        let singleExpense;
+        data.map((element)=>{
+            element.expenses.map(element =>{
+                if(element.id == expenseId){
+                    singleExpense = element
+                }
+            })
+        })
+        res.status(200);
+        res.send(singleExpense); 
+    })
+
+    // Update a single expense using its id
+    app.put("/editexpense/:id/:expenseid",async (req,res)=>{
+        try{
+            const id = req.params.id;
+            const body = req.body;
+            const expenseId = req.params.expenseid;
+            const decode = jwt.verify(id,process.env.SECRET_KEY);
+            const client = await MongoClient.connect(uri);
+            await client.db('users').collection('expenses').updateOne({"id":new ObjectId(decode._id),"expenses.id": expenseId},
+            {
+                "$set" :
+                {
+                    "expenses.$.amount":body.amount,
+                    "expenses.$.description":body.description,
+                    "expenses.$.category":body.category,
+                }
+            }
+            );
+            res.sendStatus(200);
+        }catch(error){
+            console.log(error)
+            res.sendStatus(404)
+        }
+        
+    })
+
+
 // login post
 app.post('/login',async (req,res)=>{
     const body = await req.body;
@@ -95,13 +142,14 @@ app.post('/register',async (req,res)=>{
 
 })
 
-// get user info GET
+// get user info and expenses getData();
 app.get('/user/:id',async (req,res)=>{
     try {
         const id = req.params.id;
         const decode = jwt.verify(id,process.env.SECRET_KEY);
         const client = await MongoClient.connect(uri);
         const data = await client.db('users').collection('expenses').find({"id":new ObjectId(decode._id)}).toArray();
+        // console.log(data)
         res.status(200);
         res.send(data);
     } catch (error) {
@@ -141,9 +189,9 @@ app.put('/deleteexpense',async (req,res)=>{
         const id = req.body.encryptedCookieValue;
         const taskid = req.body.taskid;
         const decode = jwt.verify(id,process.env.SECRET_KEY);
-        console.log(decode)
-        console.log(taskid)
-        console.log(req.body)
+        // console.log(decode)
+        // console.log(taskid)
+        // console.log(req.body)
         const client = await MongoClient.connect(uri);
 
         await client.db('users').collection('expenses').updateOne({"id":new ObjectId(decode._id)},{$pull:{"expenses":{"id":taskid}}})
@@ -155,6 +203,26 @@ app.put('/deleteexpense',async (req,res)=>{
     }
     
 })
+
+// Edit expense
+// app.put('/editexpense',async (req,res)=>{
+//     try {
+//         const id = req.body.encryptedCookieValue;
+//         const taskid = req.body.taskid;
+//         const decode = jwt.verify(id,process.env.SECRET_KEY);
+
+//         const client = await MongoClient.connect(uri);
+
+//         await client.db('users').collection('expenses').updateOne({"id":new ObjectId(decode._id)},{$pull:{"expenses":{"id":taskid}}})
+//         res.sendStatus(200);
+        
+//     } catch (error) {
+//         console.log(error);
+//         res.status(401);
+//     }
+    
+// })
+
 app.listen(PORT,()=>{
     console.log(`server started at : http://localhost:${PORT}`);
     
